@@ -318,8 +318,28 @@ HAPService *shelly_sw_service_create(
   const HAPCharacteristic **chars = calloc(3, sizeof(*chars));
   if (chars == NULL) return NULL;
   svc->iid = IID_BASE + (IID_STEP * cfg->id) + 0;
-  svc->serviceType = &kHAPServiceType_Switch;
-  svc->debugDescription = kHAPServiceDebugDescription_Switch;
+  switch (cfg->type) {
+    case SHELLY_SW_TYPE_SWITCH:
+      svc->serviceType = &kHAPServiceType_Switch;
+      svc->debugDescription = kHAPServiceDebugDescription_Switch;
+      break;
+    case SHELLY_SW_TYPE_LIGHTBULB:
+      svc->serviceType = &kHAPServiceType_LightBulb;
+      svc->debugDescription = kHAPServiceDebugDescription_LightBulb;
+      break;
+    case SHELLY_SW_TYPE_OUTLET:
+      svc->serviceType = &kHAPServiceType_Outlet;
+      svc->debugDescription = kHAPServiceDebugDescription_Outlet;
+      break;
+    case SHELLY_SW_TYPE_GARAGE_DOOR_OPENER:
+      svc->serviceType = &kHAPServiceType_GarageDoorOpener;
+      svc->debugDescription = kHAPServiceDebugDescription_GarageDoorOpener;
+      break;
+    default:
+      LOG(LL_ERROR, ("Type has unsupported value, setting it to SWITCH"));
+      svc->serviceType = &kHAPServiceType_Switch;
+      svc->debugDescription = kHAPServiceDebugDescription_Switch;
+  }
   svc->name = cfg->name;
   svc->properties.primaryService = true;
   chars[0] = shelly_sw_name_char(IID_BASE + (IID_STEP * cfg->id) + 1);

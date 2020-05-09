@@ -22,6 +22,13 @@
 struct mgos_ade7953;
 #endif
 
+enum shelly_sw_type {
+  SHELLY_SW_TYPE_SWITCH = 0,
+  SHELLY_SW_TYPE_OUTLET = 1,
+  SHELLY_SW_TYPE_LIGHTBULB = 2,
+  SHELLY_SW_TYPE_GARAGE_DOOR_OPENER = 3,
+};
+
 enum shelly_sw_in_mode {
   SHELLY_SW_IN_MODE_MOMENTARY = 0,
   SHELLY_SW_IN_MODE_TOGGLE = 1,

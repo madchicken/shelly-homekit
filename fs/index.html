@@ -25,7 +25,7 @@
      <button disabled class="btndis" id="uptime_label">
        Uptime: <span id="uptime"></span>
      </button>
-     <br><br>  
+     <br><br>
     </div>
     <div class="container" id="sw1_container" style="display: none">
       <h1>Switch 1</h1>
@@ -50,6 +50,15 @@
             <input type="text" id="sw1_name">
           </div>
           <div class="form-control">
+            <label>Type:</label>
+            <select id="sw1_type">
+              <option id="sw1_type_0" value="0">Switch</option>
+              <option id="sw1_type_1" value="1">Plug</option>
+              <option id="sw1_type_2" value="2">Lock</option>
+              <option id="sw1_type_3" value="3">Garage Door Opener</option>
+            </select>
+          </div>
+          <div class="form-control">
             <label>Mode:</label>
             <select id="sw1_in_mode">
               <option id="sw1_in_mode_0" value="0">Momentary</option>
@@ -68,8 +77,8 @@
             </select>
           </div>
           <div class="form-control">
-            <label for="sw1_auto_off">Auto off:</label>
-              <label class="switch">
+            <label for="sw1_auto_off">Auto off (door time):</label>
+            <label class="switch">
                 <input type="checkbox" id="sw1_auto_off">
               <span class="slider round"></span>
             </label>
@@ -362,7 +371,7 @@ el("sw2_set_btn").onclick = function() {
   );
 }
 
-function sw_save_common(cfg_key, name, in_mode, initial_state, auto_off, auto_off_delay, spinner) {
+function sw_save_common(cfg_key, name, type, in_mode, initial_state, auto_off, auto_off_delay, spinner) {
   spinner.className = "spin";
   var data = {
     config: {},
@@ -371,6 +380,7 @@ function sw_save_common(cfg_key, name, in_mode, initial_state, auto_off, auto_of
   };
   data.config[cfg_key] = {
     name: name,
+    type: parseInt(type),
     in_mode: parseInt(in_mode),
     initial_state: parseInt(initial_state),
     auto_off: auto_off,
@@ -393,7 +403,7 @@ function isValid(swType) {
     alert("Name must not be empty");
     return false;
   }
-  
+
   if (!autoOffDelayValid(swType)) {
     alert("Auto off delay must follow 24 hour format D:HH:MM:SS.sss with a value between 10ms and 24 days.");
     return false;
@@ -405,8 +415,8 @@ function autoOffDelayValid(swType) {
   var auto_off = el(swType + "_auto_off").value;
   if (auto_off) {
     var auto_off_delay = el(swType + "_auto_off_delay");
-    var auto_off_delay_valid = 
-      auto_off_delay.checkValidity() && 
+    var auto_off_delay_valid =
+      auto_off_delay.checkValidity() &&
       (dateStringToSeconds(auto_off_delay.value) >= 0.010) &&
       (dateStringToSeconds(auto_off_delay.value) <= 2147483.647);
     return auto_off_delay_valid;
@@ -420,10 +430,10 @@ function dateStringToSeconds(dateString) {
   var dateStringParts = dateString.split(':');
   var secondsPart = dateStringParts[3].split('.')[0];
   var fractionPart = dateStringParts[3].split('.')[1];
-  var seconds = parseInt(dateStringParts[0]) * 24 * 3600 + 
-                parseInt(dateStringParts[1]) * 3600 + 
-                parseInt(dateStringParts[2]) * 60 + 
-                parseInt(secondsPart) + 
+  var seconds = parseInt(dateStringParts[0]) * 24 * 3600 +
+                parseInt(dateStringParts[1]) * 3600 +
+                parseInt(dateStringParts[2]) * 60 +
+                parseInt(secondsPart) +
                 parseFloat(fractionPart / 1000);
   return seconds;
 }
@@ -463,6 +473,7 @@ el("sw2_save_btn").onclick = function() {
     sw_save_common(
         "sw2",
         el("sw2_name").value,
+        el("sw2_type").value,
         el("sw2_in_mode").value,
         el("sw2_initial").value,
         el("sw2_auto_off").checked,
