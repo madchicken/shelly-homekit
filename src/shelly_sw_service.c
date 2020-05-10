@@ -207,6 +207,24 @@ HAPError shelly_sw_handle_on_write(
   return kHAPError_None;
 }
 
+HAPError shelly_outlet_handle_in_use_read(
+    HAPAccessoryServerRef *server,
+    const HAPBoolCharacteristicReadRequest *request, bool *value,
+    void *context) {
+  struct shelly_sw_service_ctx *ctx = find_ctx(request->service);
+  const struct mgos_config_sw *cfg = ctx->cfg;
+#ifdef SHELLY_HAVE_PM
+  *value = ctx->info.apower > 0;
+#else
+  *value = ctx->info.state;
+#endif
+  LOG(LL_INFO, ("%s: READ -> %d", cfg->name, ctx->info.state));
+  ctx->hap_server = server;
+  ctx->hap_accessory = request->accessory;
+  (void) context;
+  return kHAPError_None;
+}
+
 static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
   HAPBoolCharacteristic *c = calloc(1, sizeof(*c));
   if (c == NULL) return NULL;
@@ -215,6 +233,39 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
       .iid = iid,
       .characteristicType = &kHAPCharacteristicType_On,
       .debugDescription = kHAPCharacteristicDebugDescription_On,
+      .manufacturerDescription = NULL,
+      .properties =
+          {
+              .readable = true,
+              .writable = false,
+              .supportsEventNotification = true,
+              .hidden = false,
+              .requiresTimedWrite = false,
+              .supportsAuthorizationData = false,
+              .ip = {.controlPoint = false, .supportsWriteResponse = false},
+              .ble =
+                  {
+                      .supportsBroadcastNotification = true,
+                      .supportsDisconnectedNotification = true,
+                      .readableWithoutSecurity = false,
+                  },
+          },
+      .callbacks =
+          {
+              .handleRead = shelly_sw_handle_on_read,
+          },
+  };
+  return c;
+};
+
+static const HAPCharacteristic *shelly_outlet_in_use_char(uint16_t iid) {
+  HAPBoolCharacteristic *c = calloc(1, sizeof(*c));
+  if (c == NULL) return NULL;
+  *c = (const HAPBoolCharacteristic){
+      .format = kHAPCharacteristicFormat_Bool,
+      .iid = iid,
+      .characteristicType = &kHAPCharacteristicType_OutletInUse,
+      .debugDescription = kHAPCharacteristicDebugDescription_OutletInUse,
       .manufacturerDescription = NULL,
       .properties =
           {
@@ -235,8 +286,8 @@ static const HAPCharacteristic *shelly_sw_on_char(uint16_t iid) {
           },
       .callbacks =
           {
-              .handleRead = shelly_sw_handle_on_read,
-              .handleWrite = shelly_sw_handle_on_write,
+              .handleRead = shelly_outlet_handle_in_use_read,
+              .handleWrite = shelly_outlet_handle_in_use_write,
           },
   };
   return c;
@@ -344,7 +395,11 @@ HAPService *shelly_sw_service_create(
   svc->properties.primaryService = true;
   chars[0] = shelly_sw_name_char(IID_BASE + (IID_STEP * cfg->id) + 1);
   chars[1] = shelly_sw_on_char(IID_BASE + (IID_STEP * cfg->id) + 2);
-  chars[2] = NULL;
+  if (cfg->type == SHELLY_SW_TYPE_OUTLET) {
+    chars[2] = shelly_outlet_in_use_char(IID_BASE + (IID_STEP * cfg->id) + 3);
+  } else {
+    chars[2] = NULL;
+  }
   svc->characteristics = chars;
   struct shelly_sw_service_ctx *ctx = &s_ctx[cfg->id];
   ctx->cfg = cfg;
